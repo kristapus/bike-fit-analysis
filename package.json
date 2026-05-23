@@ -1,0 +1,33 @@
+{
+  "name": "@bike-fit/analysis",
+  "version": "1.0.0",
+  "description": "Bike fitting analysis engine: computes joint angles from pose keypoints, compares against bike-type norms, and generates adjustment recommendations.",
+  "type": "module",
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types":   "./dist/index.d.ts",
+      "import":  "./dist/index.js",
+      "require": "./dist/index.cjs"
+    }
+  },
+  "files": ["dist"],
+  "sideEffects": false,
+  "scripts": {
+    "build": "tsup",
+    "dev":   "tsup --watch",
+    "typecheck": "tsc --noEmit"
+  },
+  "peerDependencies": {
+    "@tensorflow-models/pose-detection": ">=2.0.0"
+  },
+  "devDependencies": {
+    "@tensorflow-models/pose-detection": "^2.1.3",
+    "tsup":         "^8.0.0",
+    "typescript":   "~6.0.0"
+  },
+  "keywords": ["bike-fitting", "pose-estimation", "biomechanics", "react"],
+  "license": "MIT"
+}

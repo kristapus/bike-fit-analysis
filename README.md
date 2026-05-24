@@ -11,17 +11,17 @@ npm install @bike-fit/analysis
 
 ## Peer Dependencies
 
-| Package | Version |
-|---|---|
+| Package                             | Version |
+| ----------------------------------- | ------- |
 | `@tensorflow-models/pose-detection` | ≥ 2.0.0 |
-| `@tensorflow/tfjs` | ≥ 4.0.0 |
+| `@tensorflow/tfjs`                  | ≥ 4.0.0 |
 
 ## API
 
 ```typescript
 import {
-  computeFrameAngles,   // Compute joint angles from a single frame
-  buildJointSummaries,  // Aggregate frames into per-joint statistics
+  computeFrameAngles, // Compute joint angles from a single frame
+  buildJointSummaries, // Aggregate frames into per-joint statistics
   buildRecommendations, // Generate physical adjustment recommendations
 } from "@bike-fit/analysis";
 ```
@@ -58,7 +58,9 @@ const recommendations = buildRecommendations(summaries);
 
 recommendations.forEach((rec) => {
   if (rec.status !== "ok") {
-    console.log(`${rec.joint}: ${rec.direction} ${rec.adjustmentType} by ${rec.magnitudeCm} cm`);
+    console.log(
+      `${rec.joint}: ${rec.direction} ${rec.adjustmentType} by ${rec.magnitudeCm} cm`,
+    );
     // → hip: raise handlebar_height by 1.5 cm
   }
 });
@@ -124,9 +126,13 @@ function displayResults(summaries: JointSummary[]) {
 
   recommendations.forEach((rec) => {
     const icon =
-      rec.status === "ok"         ? "✅" :
-      rec.severity === "major"    ? "🔴" :
-      rec.severity === "moderate" ? "🟡" : "🟢";
+      rec.status === "ok"
+        ? "✅"
+        : rec.severity === "major"
+          ? "🔴"
+          : rec.severity === "moderate"
+            ? "🟡"
+            : "🟢";
 
     console.log(`${icon} ${rec.joint?.toUpperCase()}`);
 
@@ -151,12 +157,12 @@ function displayResults(summaries: JointSummary[]) {
 
 ## Supported Bicycle Types
 
-| Type | Standards | Knee norm | Hip norm |
-|---|---|---|---|
-| `road` | Holmes + Pruitt | 140–155° | 45–65° |
-| `gravel` | Holmes + Pruitt | 135–152° | 50–70° |
-| `mountain` | Retül | 130–148° | 55–75° |
-| `city` | General | 128–148° | 60–80° |
+| Type       | Standards       | Knee norm | Hip norm |
+| ---------- | --------------- | --------- | -------- |
+| `road`     | Holmes + Pruitt | 140–155°  | 45–65°   |
+| `gravel`   | Holmes + Pruitt | 135–152°  | 50–70°   |
+| `mountain` | Retül           | 130–148°  | 55–75°   |
+| `city`     | General         | 128–148°  | 60–80°   |
 
 ## Scripts
 
@@ -165,8 +171,3 @@ npm run build   # Compile to dist/
 npm run docs    # Generate API documentation to docs/api/
 npm run typecheck # Type-check without emitting
 ```
-
-## License
-
-Copyright (c) 2026 Kristupas. All rights reserved.
-This software is proprietary and not licensed for public use or distribution.

@@ -1,0 +1,14 @@
+{
+  "entryPoints": ["./types.ts", "./engine/angleCalculation.ts", "./engine/adjustmentModel.ts"],
+  "out": "./docs/api",
+  "name": "@bike-fit/analysis",
+  "readme": "./README.md",
+  "includeVersion": true,
+  "excludeInternal": true,
+  "excludePrivate": true,
+  "groupOrder": ["Functions", "Interfaces", "Type Aliases", "*"],
+  "navigationLinks": {
+    "GitHub": "https://github.com/your-org/bike-fit-app"
+  },
+  "plugin": []
+}

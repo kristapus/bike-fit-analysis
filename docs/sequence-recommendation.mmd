@@ -1,0 +1,16 @@
+%%{init: {'theme': 'default', 'themeVariables': {'background': 'transparent'}}}%%
+sequenceDiagram
+    participant BR as buildRecommendations
+    participant AM as adjustmentModel
+
+    BR->>BR: measuredValue vs normMin/normMax
+    BR->>BR: status = "low" | "high" | "ok"
+
+    alt status != "ok"
+        BR->>AM: calcMagnitudeCm(deltaDeg, adjustmentType)
+        AM-->>BR: magnitudeCm (apvalinta iki 0.5 cm)
+        BR->>AM: getSeverity(deltaDeg)
+        AM-->>BR: "minor" | "moderate" | "major"
+    end
+
+    BR-->>BR: Recommendation objektas

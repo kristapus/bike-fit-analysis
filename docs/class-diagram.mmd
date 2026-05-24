@@ -1,0 +1,60 @@
+%%{init: {'theme': 'default', 'themeVariables': {'background': 'transparent'}}}%%
+classDiagram
+    class FrameAngles {
+        +knee: number
+        +hip: number
+        +shoulder: number
+        +elbow: number
+    }
+
+    class JointSummary {
+        +joint: Joint
+        +min: number
+        +max: number
+        +avg: number
+        +measuredValue: number
+        +normMin: number
+        +normMax: number
+    }
+
+    class Recommendation {
+        +text: string
+        +joint: Joint
+        +status: string
+        +adjustmentType: AdjustmentType
+        +direction: AdjustmentDirection
+        +magnitudeCm: number
+        +severity: RecommendationSeverity
+    }
+
+    class JointNorm {
+        +min: number
+        +max: number
+        +aggregate: string
+        +source: FittingStandard[]
+    }
+
+    class AngleCalculation {
+        -ANGLE_NORMS: Record
+        -MIN_CONF: number
+        -vectorAngle(a, b, c) number
+        +computeFrameAngles(keypoints) FrameAngles
+        +buildJointSummaries(frames, bicycleType) JointSummary[]
+        +buildRecommendations(summaries) Recommendation[]
+        +getNorm(bicycleType, joint) JointNorm
+    }
+
+    class AdjustmentModel {
+        -DEG_PER_CM: Record
+        -JOINT_ADJUSTMENTS: Record
+        +calcMagnitudeCm(deltaDeg, adjustmentType) number
+        +getSeverity(deltaDeg) RecommendationSeverity
+    }
+
+    AngleCalculation ..> AdjustmentModel : naudoja
+    AngleCalculation ..> FrameAngles : grąžina
+    AngleCalculation ..> JointSummary : grąžina
+    AngleCalculation ..> Recommendation : grąžina
+    AngleCalculation ..> JointNorm : naudoja viduje
+    JointSummary --> Recommendation : paverčiama
+    FrameAngles --> JointSummary : agreguojama

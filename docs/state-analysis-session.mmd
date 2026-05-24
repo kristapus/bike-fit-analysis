@@ -1,0 +1,14 @@
+%%{init: {'theme': 'default', 'themeVariables': {'background': 'transparent'}}}%%
+stateDiagram-v2
+    [*] --> Idle
+
+    Idle --> InProgress : startAnalysis()
+
+    InProgress --> InProgress : kadras apdorotas (progress++)
+    InProgress --> Completed : visi kadrai apdoroti
+    InProgress --> Cancelled : vartotojas atšaukė
+    InProgress --> Failed : klaida (detector / video)
+
+    Completed --> [*]
+    Cancelled --> [*]
+    Failed --> [*]

@@ -1,0 +1,40 @@
+%%{init: {'theme': 'default', 'themeVariables': {'background': 'transparent'}}}%%
+classDiagram
+    class FrameAngles {
+        +knee: number
+        +hip: number
+        +shoulder: number
+        +elbow: number
+    }
+
+    class JointSummary {
+        +joint: Joint
+        +min: number
+        +max: number
+        +avg: number
+        +measuredValue: number
+        +normMin: number
+        +normMax: number
+    }
+
+    class Recommendation {
+        +text: string
+        +joint: Joint
+        +status: "ok" | "low" | "high"
+        +adjustmentType: AdjustmentType
+        +direction: AdjustmentDirection
+        +magnitudeCm: number
+        +severity: RecommendationSeverity
+    }
+
+    class PublicAPI {
+        +computeFrameAngles(keypoints) FrameAngles
+        +buildJointSummaries(frames, bicycleType) JointSummary[]
+        +buildRecommendations(summaries) Recommendation[]
+    }
+
+    PublicAPI --> FrameAngles : grąžina
+    PublicAPI --> JointSummary : grąžina
+    PublicAPI --> Recommendation : grąžina
+    FrameAngles --> JointSummary : agreguojama
+    JointSummary --> Recommendation : paverčiama

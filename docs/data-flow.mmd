@@ -1,0 +1,7 @@
+%%{init: {'theme': 'default', 'themeVariables': {'background': 'transparent'}}}%%
+flowchart LR
+    A[Vaizdo kadras] -->|keypoints| B[computeFrameAngles]
+    B -->|FrameAngles| C{Kartoti\nN kadrų}
+    C -->|FrameAngles masyvas| D[buildJointSummaries]
+    D -->|JointSummary[]| E[buildRecommendations]
+    E -->|Recommendation[]| F[Rezultatai]

@@ -1,0 +1,30 @@
+%%{init: {'theme': 'default', 'themeVariables': {'background': 'transparent'}}}%%
+flowchart TB
+    subgraph Naršyklė["Vartotojo naršyklė"]
+        subgraph App["bike-fit-app (Vite / React)"]
+            UA[useAnalysis.ts]
+            PE[PoseEstimator.tsx]
+        end
+
+        subgraph Pkg["@bike-fit/analysis"]
+            CFA[computeFrameAngles]
+            BJS[buildJointSummaries]
+            BR[buildRecommendations]
+        end
+
+        subgraph TF["@tensorflow-models/pose-detection"]
+            MODEL[MoveNet / BlazePose]
+        end
+
+        subgraph Backend["TF.js Backend"]
+            WEBGL[WebGL]
+            WASM[WASM]
+        end
+
+        UA --> CFA
+        UA --> BJS
+        UA --> BR
+        PE --> MODEL
+        MODEL --> WEBGL
+        MODEL --> WASM
+    end

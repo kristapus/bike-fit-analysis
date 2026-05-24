@@ -1,0 +1,20 @@
+%%{init: {'theme': 'default', 'themeVariables': {'background': 'transparent'}}}%%
+sequenceDiagram
+    actor App as Vartojanti programa
+    participant TF as PoseDetector (TF.js)
+    participant CFA as computeFrameAngles
+    participant BJS as buildJointSummaries
+    participant BR as buildRecommendations
+
+    loop Kiekvienas kadras (kas 0.2 sek.)
+        App->>TF: estimatePoses(videoFrame)
+        TF-->>App: keypoints[]
+        App->>CFA: computeFrameAngles(keypoints)
+        CFA-->>App: FrameAngles
+    end
+
+    App->>BJS: buildJointSummaries(frames[], "road")
+    BJS-->>App: JointSummary[]
+
+    App->>BR: buildRecommendations(summaries)
+    BR-->>App: Recommendation[]

@@ -1,3 +1,16 @@
+/**
+ * @packageDocumentation
+ * Core angle computation, joint summaries, and recommendation generation.
+ *
+ * This module implements the three public functions of `@bike-fit/analysis`:
+ * {@link computeFrameAngles}, {@link buildJointSummaries}, and {@link buildRecommendations}.
+ *
+ * Normative angle ranges are derived from:
+ * - **Holmes (1994)** — clinical knee flexion study, injury prevention focus
+ * - **Pruitt / BikeFit** — performance-oriented road fit methodology
+ * - **Retül** (Specialized) — dynamic fit system, wider ranges for MTB / flexible riders
+ */
+
 import type * as poseDetection from "@tensorflow-models/pose-detection";
 import type { BicycleType, Joint, JointSummary, Recommendation, FrameAngles, FittingStandard } from "../types";
 import {
@@ -6,6 +19,17 @@ import {
   JOINT_ADJUSTMENTS,
 } from "./adjustmentModel";
 
+/**
+ * Computes the angle (in degrees) at vertex `b` formed by points `a`, `b`, and `c`
+ * using the dot product of vectors b→a and b→c.
+ *
+ * @param a - First point (e.g. thigh landmark)
+ * @param b - Vertex point (e.g. knee landmark)
+ * @param c - Third point (e.g. ankle landmark)
+ * @returns Angle in degrees in the range [0, 180]. Returns `0` if either vector has zero magnitude.
+ *
+ * @internal
+ */
 function vectorAngle(
   a: { x: number; y: number },
   b: { x: number; y: number },
@@ -22,10 +46,33 @@ function vectorAngle(
   );
 }
 
+/**
+ * Minimum keypoint confidence score required for a landmark to be used in angle computation.
+ * Keypoints with a score below this threshold are treated as undetected.
+ * @internal
+ */
 const MIN_CONF = 0.3;
 
+/** @internal */
 const SIDE_JOINTS = ["shoulder", "elbow", "wrist", "hip", "knee", "ankle"] as const;
 
+/**
+ * Computes joint angles (in degrees) from a single video frame's pose keypoints.
+ *
+ * The function automatically selects the better-visible body side (left or right)
+ * by comparing the sum of confidence scores across all side joints.
+ * Keypoints with a confidence score below `0.3` are ignored.
+ *
+ * @param kps - Array of keypoints returned by `@tensorflow-models/pose-detection`
+ *              for a single detected pose.
+ * @returns A {@link FrameAngles} object. Fields are `undefined` when the required
+ *          keypoints for that joint were not detected with sufficient confidence.
+ *
+ * @example
+ * const poses = await detector.estimatePoses(videoElement);
+ * const angles = computeFrameAngles(poses[0].keypoints);
+ * // → { knee: 152.3, hip: 58.1, shoulder: 91.4, elbow: 158.7 }
+ */
 export function computeFrameAngles(kps: poseDetection.Keypoint[]): FrameAngles {
   const byName = (name: string): poseDetection.Keypoint | null => {
     const kp = kps.find((k) => k.name === name);
@@ -55,27 +102,43 @@ export function computeFrameAngles(kps: poseDetection.Keypoint[]): FrameAngles {
   };
 }
 
+/**
+ * Aggregate function used to derive the single representative value
+ * compared against the normative range.
+ * @internal
+ */
 type NormAggregate = "min" | "max" | "avg";
 
-// Fitting standards used in ANGLE_NORMS below.
-// Holmes: clinical knee-flexion study (Holmes et al., 1994) — injury prevention focus.
-// Pruitt: Andy Pruitt / BikeFit — performance-oriented road fit.
-// Retül: dynamic fit system (Specialized/Retül) — wider ranges for MTB / flexible riders.
+/** Re-export for external consumers who need to reference fitting standards. */
 export type { FittingStandard };
 
+/**
+ * Internal normative range definition for a single joint.
+ * @internal
+ */
 interface JointNorm {
+  /** Lower bound of the normative range (degrees). */
   min: number;
+  /** Upper bound of the normative range (degrees). */
   max: number;
-  /** Which pedal-stroke aggregate to compare against this norm */
+  /** Which pedal-stroke aggregate to compare against this norm. */
   aggregate: NormAggregate;
-  /** Standard(s) this range is derived from */
+  /** Biomechanical standards this range is derived from. */
   source: FittingStandard[];
 }
 
-// Normative angle ranges per bicycle type (degrees).
-// road/gravel  → Holmes + Pruitt blend (25–35° flexion at BDC = 145–155° extension)
-// mountain     → Retül dynamic (wider knee range; more upright hip/shoulder)
-// city         → General upright guidelines (comfort over performance)
+/**
+ * Normative angle ranges (degrees) per bicycle type and joint.
+ *
+ * | Joint    | Road      | Gravel    | Mountain  | City      | Aggregate |
+ * |----------|-----------|-----------|-----------|-----------|-----------|
+ * | knee     | 140–155°  | 135–152°  | 130–148°  | 128–148°  | max       |
+ * | hip      | 45–65°    | 50–70°    | 55–75°    | 60–80°    | min       |
+ * | shoulder | 80–100°   | 85–105°   | 90–110°   | 95–115°   | avg       |
+ * | elbow    | 150–165°  | 145–167°  | 140–165°  | 145–168°  | avg       |
+ *
+ * @internal
+ */
 const ANGLE_NORMS: Record<BicycleType, Partial<Record<Joint, JointNorm>>> = {
   road: {
     knee:     { min: 140, max: 155, aggregate: "max", source: ["holmes", "pruitt"] },
@@ -103,6 +166,15 @@ const ANGLE_NORMS: Record<BicycleType, Partial<Record<Joint, JointNorm>>> = {
   },
 };
 
+/**
+ * Returns the normative angle range for a given bicycle type and joint.
+ *
+ * @param bicycleType - The bicycle type.
+ * @param joint       - The joint to look up.
+ * @returns The {@link JointNorm} for the combination, or `undefined` if not defined.
+ *
+ * @internal
+ */
 export function getNorm(
   bicycleType: BicycleType,
   joint: Joint,
@@ -110,8 +182,30 @@ export function getNorm(
   return ANGLE_NORMS[bicycleType][joint];
 }
 
+/** Joints for which recommendations are generated. @internal */
 const ANALYZABLE_JOINTS: Joint[] = ["knee", "hip", "shoulder", "elbow"];
 
+/**
+ * Generates bike fitting recommendations from joint summaries.
+ *
+ * For each joint, the `measuredValue` (or `avg` as fallback) is compared against
+ * `normMin` and `normMax`. If outside the range, the function calculates:
+ * - The recommended adjustment type and direction
+ * - The adjustment magnitude in centimetres (rounded to nearest 0.5 cm)
+ * - The severity level based on the angular deviation
+ *
+ * @param summaries - Array of {@link JointSummary} objects produced by {@link buildJointSummaries}.
+ * @returns Array of {@link Recommendation} objects, one per analysable joint present in `summaries`.
+ *
+ * @example
+ * const recs = buildRecommendations(summaries);
+ * // [{
+ * //   joint: "knee", status: "low",
+ * //   adjustmentType: "saddle_height", direction: "raise",
+ * //   magnitudeCm: 1.5, severity: "moderate",
+ * //   text: "recommendations.knee.low"
+ * // }]
+ */
 export function buildRecommendations(summaries: JointSummary[]): Recommendation[] {
   return summaries
     .filter((s) => ANALYZABLE_JOINTS.includes(s.joint))
@@ -155,6 +249,22 @@ export function buildRecommendations(summaries: JointSummary[]): Recommendation[
     });
 }
 
+/**
+ * Aggregates per-frame angle data into per-joint statistical summaries
+ * and attaches normative ranges for the selected bicycle type.
+ *
+ * Joints with no reliable data across all frames are omitted from the result.
+ * The `measuredValue` field is set to the aggregate specified by the norm
+ * (`max` for knee, `min` for hip, `avg` for shoulder and elbow).
+ *
+ * @param frames      - Array of {@link FrameAngles} objects from {@link computeFrameAngles}.
+ * @param bicycleType - Bicycle type used to select normative angle ranges.
+ * @returns Array of {@link JointSummary} objects. Joints without sufficient data are excluded.
+ *
+ * @example
+ * const summaries = buildJointSummaries(frames, "road");
+ * // [{ joint: "knee", min: 138, max: 154, avg: 146, normMin: 140, normMax: 155 }, ...]
+ */
 export function buildJointSummaries(
   frames: FrameAngles[],
   bicycleType: BicycleType,

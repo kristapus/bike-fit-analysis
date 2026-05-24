@@ -4,9 +4,32 @@ Bike fitting analysis engine: computes joint angles from pose keypoints, compare
 
 ## Installation
 
+**1.** Install the peer dependencies listed in the table below:
+
 ```bash
 npm install @tensorflow/tfjs @tensorflow-models/pose-detection
-npm install @bike-fit/analysis
+```
+
+**2.** This package is not published on npm — clone the repository locally:
+
+```bash
+git clone <repository-url>
+```
+
+**3.** In your `package.json`, point to the local copy:
+
+```json
+{
+  "dependencies": {
+    "@bike-fit/analysis": "file:../bike-fit-analysis"
+  }
+}
+```
+
+**4.** Install dependencies:
+
+```bash
+npm install
 ```
 
 ## Peer Dependencies
